@@ -11,6 +11,15 @@ members = [
 ]
 resolver = "2"
 
+[net]
+git-fetch-with-cli = true
+
+[source.crates-io]
+replace-with = 'tuna'
+
+[source.tuna]
+registry = "https://mirrors.tuna.tsinghua.edu.cn/git/crates.io-index.git"
+
 [workspace.package]
 version = "1.6.0"
 edition = "2021"

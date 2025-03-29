@@ -14,6 +14,12 @@ path = "src/lib.rs"
 name = "text-embeddings-router"
 path = "src/main.rs"
 
+[source.crates-io]
+replace-with = 'tuna'
+
+[source.tuna]
+registry = "https://mirrors.tuna.tsinghua.edu.cn/git/crates.io-index.git"
+
 [dependencies]
 anyhow = { workspace = true }
 text-embeddings-backend = { path = "../backends", features = ["clap"] }

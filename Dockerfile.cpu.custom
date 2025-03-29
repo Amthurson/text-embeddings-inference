@@ -1,0 +1,46 @@
+# 构建阶段
+FROM rust:1.75-bookworm AS builder
+
+WORKDIR /app
+
+ENV RUST_LOG=debug
+
+# 安装构建依赖
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    git curl build-essential pkg-config libssl-dev protobuf-compiler \
+    && rm -rf /var/lib/apt/lists/*
+
+# 预复制 Cargo.toml 相关文件用于缓存依赖构建
+COPY ./Cargo.toml ./Cargo.lock ./
+COPY ./core/Cargo.toml ./core/
+COPY ./router/Cargo.toml ./router/
+COPY ./backends/Cargo.toml ./backends/
+
+# 创建空 main.rs 触发依赖编译缓存（否则 cargo build 直接拉 Git 依赖）
+RUN mkdir -p core/src router/src backends/src \
+    && echo 'fn main() {}' > core/src/lib.rs \
+    && echo 'fn main() {}' > router/src/main.rs \
+    && echo 'fn main() {}' > backends/src/lib.rs \
+    && cargo build --release || true
+
+# 正式复制完整代码（如果上面命中缓存，下面就快了）
+COPY . .
+
+# 重新构建 release 版本
+RUN cargo build --release
+
+# 运行阶段
+FROM debian:bookworm-slim
+
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates libssl3 curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /app/target/release/text-embeddings-router .
+
+EXPOSE 3000
+
+ENTRYPOINT ["/app/text-embeddings-router"]

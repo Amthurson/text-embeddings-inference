@@ -40,6 +40,7 @@ use tower_http::cors::{AllowOrigin, CorsLayer};
 use tracing::instrument;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
+use std::collections::HashMap;
 
 ///Text Embeddings Inference endpoint info
 #[utoipa::path(
@@ -616,8 +617,24 @@ async fn embed(
             let counter = metrics::counter!("te_request_count", "method" => "batch");
             counter.increment(1);
 
-            if inputs.is_empty() {
-                let message = "`inputs` cannot be empty".to_string();
+            let filtered_inputs: Vec<String> = inputs
+                .into_iter()
+                .filter_map(|input| match input {
+                    InputType::String(s) => {
+                        let trimmed = s.trim();
+                        if trimmed.is_empty() {
+                            None
+                        } else {
+                            Some(trimmed.to_string())
+                        }
+                    }
+                    _ => None,
+                })
+                .collect();
+
+
+            if filtered_inputs.is_empty() {
+                let message = "`inputs` cannot be empty 1".to_string();
                 tracing::error!("{message}");
                 let err = ErrorResponse {
                     error: message,
@@ -628,7 +645,7 @@ async fn embed(
                 Err(err)?;
             }
 
-            let batch_size = inputs.len();
+            let batch_size = filtered_inputs.len();
             if batch_size > info.max_client_batch_size {
                 let message = format!(
                     "batch size {batch_size} > maximum allowed batch size {}",
@@ -647,8 +664,8 @@ async fn embed(
             let mut futures = Vec::with_capacity(batch_size);
             let mut compute_chars = 0;
 
-            for input in inputs {
-                compute_chars += input.count_chars();
+            for input in filtered_inputs {
+                compute_chars += input.chars().count();
 
                 let local_infer = infer.clone();
                 let prompt_name = req.prompt_name.clone();
@@ -793,8 +810,24 @@ async fn embed_sparse(
             let counter = metrics::counter!("te_request_count", "method" => "batch");
             counter.increment(1);
 
-            if inputs.is_empty() {
-                let message = "`inputs` cannot be empty".to_string();
+            let filtered_inputs: Vec<String> = inputs
+                .into_iter()
+                .filter_map(|input| match input {
+                    InputType::String(s) => {
+                        let trimmed = s.trim();
+                        if trimmed.is_empty() {
+                            None
+                        } else {
+                            Some(trimmed.to_string())
+                        }
+                    }
+                    _ => None,
+                })
+                .collect();
+
+
+            if filtered_inputs.is_empty() {
+                let message = "`inputs` cannot be empty 2".to_string();
                 tracing::error!("{message}");
                 let err = ErrorResponse {
                     error: message,
@@ -805,7 +838,7 @@ async fn embed_sparse(
                 Err(err)?;
             }
 
-            let batch_size = inputs.len();
+            let batch_size = filtered_inputs.len();
             if batch_size > info.max_client_batch_size {
                 let message = format!(
                     "batch size {batch_size} > maximum allowed batch size {}",
@@ -824,8 +857,8 @@ async fn embed_sparse(
             let mut futures = Vec::with_capacity(batch_size);
             let mut compute_chars = 0;
 
-            for input in inputs {
-                compute_chars += input.count_chars();
+            for input in filtered_inputs {
+                compute_chars += input.chars().count();
 
                 let local_infer = infer.clone();
                 let prompt_name = req.prompt_name.clone();
@@ -962,8 +995,23 @@ async fn embed_all(
             let counter = metrics::counter!("te_request_count", "method" => "batch");
             counter.increment(1);
 
-            if inputs.is_empty() {
-                let message = "`inputs` cannot be empty".to_string();
+            let filtered_inputs: Vec<String> = inputs
+                .into_iter()
+                .filter_map(|input| match input {
+                    InputType::String(s) => {
+                        let trimmed = s.trim();
+                        if trimmed.is_empty() {
+                            None
+                        } else {
+                            Some(trimmed.to_string())
+                        }
+                    }
+                    _ => None,
+                })
+                .collect();
+
+            if filtered_inputs.is_empty() {
+                let message = "`inputs` cannot be empty 3".to_string();
                 tracing::error!("{message}");
                 let err = ErrorResponse {
                     error: message,
@@ -974,7 +1022,7 @@ async fn embed_all(
                 Err(err)?;
             }
 
-            let batch_size = inputs.len();
+            let batch_size = filtered_inputs.len();
             if batch_size > info.max_client_batch_size {
                 let message = format!(
                     "batch size {batch_size} > maximum allowed batch size {}",
@@ -993,8 +1041,8 @@ async fn embed_all(
             let mut futures = Vec::with_capacity(batch_size);
             let mut compute_chars = 0;
 
-            for input in inputs {
-                compute_chars += input.count_chars();
+            for input in filtered_inputs {
+                compute_chars += input.chars().count();
 
                 let local_infer = infer.clone();
                 let prompt_name = req.prompt_name.clone();
@@ -1151,8 +1199,23 @@ async fn openai_embed(
             let counter = metrics::counter!("te_request_count", "method" => "batch");
             counter.increment(1);
 
-            if inputs.is_empty() {
-                let message = "`inputs` cannot be empty".to_string();
+            let filtered_inputs: Vec<String> = inputs
+                .into_iter()
+                .filter_map(|input| match input {
+                    InputType::String(s) => {
+                        let trimmed = s.trim();
+                        if trimmed.is_empty() {
+                            None
+                        } else {
+                            Some(trimmed.to_string())
+                        }
+                    }
+                    _ => None,
+                })
+                .collect();
+
+            if filtered_inputs.is_empty() {
+                let message = "`inputs` cannot be empty 4".to_string();
                 tracing::error!("{message}");
                 let err = ErrorResponse {
                     error: message,
@@ -1163,7 +1226,19 @@ async fn openai_embed(
                 Err(err)?;
             }
 
-            let batch_size = inputs.len();
+            if filtered_inputs.is_empty() {
+                let message = "`inputs` cannot be empty 5".to_string();
+                tracing::error!("{message}");
+                let err = ErrorResponse {
+                    error: message,
+                    error_type: ErrorType::Empty,
+                };
+                let counter = metrics::counter!("te_request_failure", "err" => "validation");
+                counter.increment(1);
+                Err(err)?;
+            }
+
+            let batch_size = filtered_inputs.len();
             if batch_size > info.max_client_batch_size {
                 let message = format!(
                     "batch size {batch_size} > maximum allowed batch size {}",
@@ -1182,8 +1257,8 @@ async fn openai_embed(
             let mut futures = Vec::with_capacity(batch_size);
             let mut compute_chars = 0;
 
-            for input in inputs {
-                compute_chars += input.count_chars();
+            for input in filtered_inputs {
+                compute_chars += input.chars().count();
 
                 let local_infer = infer.clone();
                 futures.push(async move {
@@ -1285,41 +1360,53 @@ async fn tokenize(
     info: Extension<Info>,
     Json(req): Json<TokenizeRequest>,
 ) -> Result<Json<TokenizeResponse>, (StatusCode, Json<ErrorResponse>)> {
+    // 输出所有输入
+    tracing::info!(
+        "Inputs: {}",
+        serde_json::to_string(&req.inputs).unwrap_or_else(|_| "invalid json".to_string())
+    );
+
+    // 定义辅助异步函数，用于对单个字符串进行分词
     let tokenize_inner = move |input: String,
                                add_special_tokens: bool,
                                prompt_name: Option<String>,
                                infer: Infer| async move {
-        let (encoded_input, encoding) = infer
+        // 调用底层 Infer.tokenize 执行实际分词
+        let (encoded_input, encoding) = match infer
             .tokenize(input.clone(), add_special_tokens, prompt_name)
-            .await
-            .map_err(ErrorResponse::from)?;
-        let input = encoded_input.unwrap_or(input);
+            .await 
+            .map_err(ErrorResponse::from)?; // 若出错，直接返回错误响应
 
+        // 若 tokenize 对输入进行了编码替换（如添加Prompt前缀），使用encoded_input，否则用原始input
+        let original_input = encoded_input.unwrap_or(input);
+
+        // 根据 Encoding 构造 SimpleToken 列表
         let tokens: Vec<SimpleToken> = encoding
             .get_ids()
             .iter()
             .zip(encoding.get_offsets())
             .zip(encoding.get_special_tokens_mask())
             .zip(encoding.get_tokens())
-            .map(|(((&id, &(start, stop)), special), token)| {
-                let special = *special == 1;
-                match special {
-                    true => SimpleToken {
+            .map(|(((&id, &(start, stop)), &special_mask), token_str)| {
+                let is_special = special_mask == 1;
+                if is_special {
+                    // 特殊token：直接使用token字符串，start/stop为空
+                    SimpleToken {
                         id,
-                        text: token.clone(),
-                        special,
+                        text: token_str.clone(),
+                        special: true,
                         start: None,
                         stop: None,
-                    },
-                    false => {
-                        let text: String = input.chars().skip(start).take(stop - start).collect();
-                        SimpleToken {
-                            id,
-                            text,
-                            special,
-                            start: Some(start),
-                            stop: Some(stop),
-                        }
+                    }
+                } else {
+                    // 常规token：从原始输入截取对应子串
+                    let text_segment: String = original_input.chars().skip(start).take(stop - start).collect();
+                    SimpleToken {
+                        id,
+                        text: text_segment,
+                        special: false,
+                        start: Some(start),
+                        stop: Some(stop),
                     }
                 }
             })
@@ -1327,56 +1414,107 @@ async fn tokenize(
         Ok::<Vec<SimpleToken>, ErrorResponse>(tokens)
     };
 
+    // 根据输入类型分别处理 Single 和 Batch
     let tokens = match req.inputs {
         TokenizeInput::Single(input) => {
-            vec![tokenize_inner(input, req.add_special_tokens, req.prompt_name, infer.0).await?]
+            // 单一输入：去除首尾空白后直接处理
+            let trimmed = input.trim().to_string();
+            if trimmed.is_empty() {
+                tracing::warn!("Empty input in single mode. Return empty token list.");
+                return Ok(Json(TokenizeResponse(vec![])));
+            }
+            // 过滤单个输入是否为无效内容（如纯链接）
+            if is_invalid_segment(&trimmed) {
+                tracing::warn!("Input is a markdown link or empty content. Return empty token list.");
+                return Ok(Json(TokenizeResponse(vec![])));
+            }
+            // 分词处理单段文本
+            vec![tokenize_inner(trimmed, req.add_special_tokens, req.prompt_name, infer.0).await?]
         }
         TokenizeInput::Batch(inputs) => {
-            if inputs.is_empty() {
-                let message = "`inputs` cannot be empty".to_string();
-                tracing::error!("{message}");
-                let err = ErrorResponse {
-                    error: message,
-                    error_type: ErrorType::Empty,
-                };
-                let counter = metrics::counter!("te_request_failure", "err" => "validation");
-                counter.increment(1);
-                Err(err)?;
+            // 批量输入：先去除每个字符串的首尾空白符
+            let mut processed_inputs: Vec<String> = inputs
+                .into_iter()
+                .map(|s| s.trim().to_string())
+                .collect();
+            // 过滤掉空字符串和纯链接/无意义段落
+            processed_inputs.retain(|s| !s.is_empty() && !is_invalid_segment(s));
+            if processed_inputs.is_empty() {
+                tracing::warn!("All inputs are empty or invalid after filtering. Return empty token list.");
+                return Ok(Json(TokenizeResponse(vec![])));
             }
-
-            let batch_size = inputs.len();
+            // 批次大小校验
+            let batch_size = processed_inputs.len();
             if batch_size > info.max_client_batch_size {
-                let message = format!(
-                    "batch size {batch_size} > maximum allowed batch size {}",
-                    info.max_client_batch_size
-                );
-                tracing::error!("{message}");
+                let message = format!("batch size {} > maximum allowed batch size {}", batch_size, info.max_client_batch_size);
+                tracing::error!("{}", message);
                 let err = ErrorResponse {
                     error: message,
                     error_type: ErrorType::Validation,
                 };
-                let counter = metrics::counter!("te_request_failure", "err" => "batch_size");
-                counter.increment(1);
-                Err(err)?;
+                metrics::counter!("te_request_failure", "err" => "batch_size").increment(1);
+                return Err((StatusCode::PAYLOAD_TOO_LARGE, Json(err)));
             }
 
+            // 去重处理：仅对唯一内容调用 tokenize_inner
             let mut futures = Vec::with_capacity(batch_size);
-            for input in inputs {
-                futures.push(tokenize_inner(
-                    input,
-                    req.add_special_tokens,
-                    req.prompt_name.clone(),
-                    infer.0.clone(),
-                ));
+            let mut seen: HashMap<String, usize> = HashMap::new();
+            let mut results_index_map: Vec<usize> = Vec::with_capacity(batch_size);
+            let mut unique_inputs: Vec<String> = Vec::new();
+            for text in processed_inputs {
+                if let Some(&idx) = seen.get(&text) {
+                    // 重复内容，记录索引映射，跳过重新分词
+                    results_index_map.push(idx);
+                } else {
+                    // 新内容，记录映射并加入任务列表
+                    let idx = unique_inputs.len();
+                    seen.insert(text.clone(), idx);
+                    results_index_map.push(idx);
+                    unique_inputs.push(text);
+                    // 为该唯一内容创建分词任务
+                    futures.push(tokenize_inner(
+                        unique_inputs[idx].clone(),
+                        req.add_special_tokens,
+                        req.prompt_name.clone(),
+                        infer.0.clone(),
+                    ));
+                }
             }
 
-            join_all(futures)
+            // 并发执行所有唯一内容的分词任务
+            let unique_results: Vec<Vec<SimpleToken>> = join_all(futures)
                 .await
                 .into_iter()
-                .collect::<Result<Vec<Vec<SimpleToken>>, ErrorResponse>>()?
+                .collect::<Result<_, _>>()?;  // 若任何任务返回Err，则传播错误
+
+            // 根据索引映射构造与原始输入对应的结果列表
+            let mut all_tokens: Vec<Vec<SimpleToken>> = Vec::with_capacity(batch_size);
+            for idx in results_index_map {
+                all_tokens.push(unique_results[idx].clone());
+            }
+            all_tokens
         }
     };
+
+    // 返回结果，包装为 TokenizeResponse
     Ok(Json(TokenizeResponse(tokens)))
+}
+
+// 帮助函数：判断段落内容是否为无效（纯链接/图片或无实际文字）
+fn is_invalid_segment(s: &str) -> bool {
+    // 检查并忽略开头的 '!'（用于图片链接）
+    let content = s.strip_prefix('!').unwrap_or(s);
+    // 是否形如 "[xxx](yyy)" 的纯链接（content已去除首尾空白）
+    if content.starts_with('[') && content.ends_with(')') {
+        if let Some(bracket_idx) = content.find("](") {
+            // 确保 "](" 存在且在结尾括号之前
+            if bracket_idx < content.len() - 2 {
+                return true;
+            }
+        }
+    }
+    // 可在此处添加其他判定规则（如仅标点符号的字符串）
+    false
 }
 
 /// Decode input ids

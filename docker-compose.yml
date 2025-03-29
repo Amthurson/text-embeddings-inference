@@ -1,0 +1,65 @@
+version: '3.8'
+
+networks:
+  tei-net:
+    driver: bridge
+
+services:
+  tei:
+    container_name: tei
+    build:
+      context: .
+      dockerfile: Dockerfile.cpu.custom
+    ports:
+      - "8081:3000"
+    environment:
+      - MODEL_ID=BAAI/bge-m3
+      - POOLING=cls
+      - MAX_CLIENT_BATCH_SIZE=512
+      - MAX_BATCH_TOKENS=16384
+      - MAX_CONCURRENT_REQUESTS=512
+      - AUTO_TRUNCATE=true
+      - PAYLOAD_LIMIT=16777216
+      - RUST_LOG=info
+    volumes:
+      - ./model:/app/model
+    restart: always
+    networks:
+      - tei-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/info"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  tei-dev:
+    container_name: tei-dev
+    build:
+      context: .
+      dockerfile: Dockerfile.cpu.custom
+      target: builder
+    command: bash -c "cargo install cargo-watch && cargo watch -x 'run --bin text-embeddings-router'"
+    ports:
+      - "8082:3000"
+    environment:
+      - MODEL_ID=BAAI/bge-m3
+      - POOLING=cls
+      - MAX_CLIENT_BATCH_SIZE=512
+      - MAX_BATCH_TOKENS=16384
+      - MAX_CONCURRENT_REQUESTS=512
+      - AUTO_TRUNCATE=true
+      - PAYLOAD_LIMIT=16777216
+      - RUST_LOG=debug
+    volumes:
+      - ./router:/app/router
+      - ./core:/app/core
+      - ./model:/app/model
+    working_dir: /app/router
+    restart: unless-stopped
+    networks:
+      - tei-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/info"]
+      interval: 30s
+      timeout: 10s
+      retries: 5

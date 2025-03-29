@@ -501,7 +501,7 @@ pub(crate) struct OpenAICompatErrorResponse {
     pub error_type: ErrorType,
 }
 
-#[derive(Deserialize, ToSchema)]
+#[derive(Deserialize, ToSchema, Debug, Serialize)]
 #[serde(untagged)]
 pub(crate) enum TokenizeInput {
     Single(String),
@@ -531,7 +531,7 @@ fn default_add_special_tokens() -> bool {
     true
 }
 
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize, ToSchema, Clone)]
 pub(crate) struct SimpleToken {
     #[schema(example = 0)]
     pub id: u32,

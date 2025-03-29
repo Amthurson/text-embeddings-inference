@@ -5,6 +5,12 @@ edition.workspace = true
 authors.workspace = true
 homepage.workspace = true
 
+[source.crates-io]
+replace-with = 'tuna'
+
+[source.tuna]
+registry = "https://mirrors.tuna.tsinghua.edu.cn/git/crates.io-index.git"
+
 [dependencies]
 anyhow = { workspace = true }
 accelerate-src = { version = "0.3.2", optional = true }
